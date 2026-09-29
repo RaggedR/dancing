@@ -1,0 +1,27 @@
+# Environment
+venv/
+__pycache__/
+*.pyc
+
+# Model bundles — downloaded on demand, 40MB
+models/
+
+# Source videos — other people's footage, never committed
+*.mp4
+*.webm
+*.mkv
+
+# Extraction outputs — large, and body.mp4 contains source imagery
+out/
+out_emma/
+out_paquita/
+out_test/
+share/
+
+# Scratch metadata
+tk.json
+v3.json
+meta.json
+probe*
+cuts.txt
+scores.txt
