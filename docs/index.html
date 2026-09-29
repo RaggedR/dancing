@@ -67,6 +67,17 @@ figure{margin:0}
 }
 @media(max-width:820px){.panel{grid-template-columns:1fr}}
 .stage{position:relative;min-height:440px;display:flex;align-items:center;justify-content:center;padding:14px}
+.stagepair{display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:640px){.stagepair{grid-template-columns:1fr}}
+.stagecol{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 10px}
+.stagecol+.stagecol{border-left:1px solid var(--line)}
+@media(max-width:640px){.stagecol+.stagecol{border-left:0;border-top:1px solid var(--line)}}
+.stagelabel{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:center}
+.stagelabel b{display:block;color:var(--ink);font-weight:600;letter-spacing:.14em}
+.stagecol.raw .stagelabel b{color:var(--warn)}
+.stagecol.fit .stagelabel b{color:var(--teal)}
+.srclink{font-size:.95rem;color:var(--muted);margin:1.1rem 0 0}
+.srclink a{color:var(--brass)}
 canvas{display:block;max-width:100%}
 .controls{border-left:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:18px}
 @media(max-width:820px){.controls{border-left:0;border-top:1px solid var(--line)}}
@@ -113,11 +124,23 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
   <p class="lede">A 24-second classical variation, extracted from video, fitted to a
   cosine series, and reduced to 38,808 numbers. Everything below is drawn live from
   those numbers — nothing here is a recording.</p>
+  <p class="srclink">Measured from a 25-second Paquita variation danced by Maria
+  Khoreva — <a href="https://www.youtube.com/shorts/oE1F1IkqPRs" rel="noopener noreferrer"
+  target="_blank">watch the original on YouTube ↗</a></p>
 </header>
 
 <section class="wrap">
   <figure class="panel">
-    <div class="stage"><canvas id="dance" width="620" height="700"></canvas></div>
+    <div class="stagepair">
+      <div class="stagecol raw">
+        <div class="stagelabel"><b>Raw</b>as the model saw it</div>
+        <canvas id="danceRaw" width="310" height="390"></canvas>
+      </div>
+      <div class="stagecol fit">
+        <div class="stagelabel"><b>Fitted</b>cosine series</div>
+        <canvas id="dance" width="310" height="390"></canvas>
+      </div>
+    </div>
     <div class="controls">
       <div class="ctl">
         <label for="kslider">Coefficients kept <b><span id="kval">588</span>/588</b></label>
@@ -127,16 +150,16 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
         <label for="tslider">Time <b><span id="tval">0.00</span> s</b></label>
         <input type="range" id="tslider" min="0" max="1225" value="0" step="1">
       </div>
-      <button id="rawtoggle">Showing: fitted</button>
       <button id="play">Pause</button>
       <div class="readout" id="ro"></div>
     </div>
   </figure>
   <figcaption>The skeleton is reconstructed every frame by evaluating the series below.
   Drag <em>coefficients kept</em> toward 2 to watch the choreography dissolve into its
-  lowest harmonics — the dance becoming a smear of its own average. Switch to
-  <em>raw</em> for the unfitted landmarks exactly as the pose model reported them,
-  frame by frame, with every tremor left in.</figcaption>
+  lowest harmonics — the dance becoming a smear of its own average. The left figure
+  is the unfitted output: every frame estimated independently, no smoothing, every
+  tremor left in. Watch a held position and the raw limbs shiver while the fitted
+  ones hold still.</figcaption>
 </section>
 
 <section class="wrap stack">
@@ -392,39 +415,32 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
   let frame = 0, playing = !window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if (!playing) playBtn.textContent = 'Play';
 
-  let useRaw = false;
+  const cvRaw = document.getElementById('danceRaw');
+  function paint(canvas, pts, bone, joint){
+    const ctx = fit(canvas), w = canvas.width/dpr(), h = canvas.height/dpr();
+    // source frame is 1080x1350 (0.8 aspect); letterbox into the canvas
+    const s = Math.min(w/0.8, h), bw = 0.8*s, bh = s;
+    ctx.save(); ctx.translate((w-bw)/2, (h-bh)/2);
+    drawSkeleton(ctx, pts, bw, bh, bone, joint, 1.8);
+    ctx.restore();
+  }
   function renderHero(){
     const K = +kEl.value;
-    const p = useRaw ? D.raw.slice(frame*CH, frame*CH + CH) : evalAt(frame, K);
-    const ctx = fit(cv), w = cv.width/dpr(), h = cv.height/dpr();
-    // frame is 1080x1350 (0.8 aspect); letterbox into canvas
-    const s = Math.min(w/0.8, h), bw = 0.8*s, bh = s, ox = (w-bw)/2, oy = (h-bh)/2;
-    ctx.save(); ctx.translate(ox, oy);
-    drawSkeleton(ctx, p, bw, bh, css('--ink'), css('--brass'), 2.1);
-    ctx.restore();
+    paint(cvRaw, D.raw.slice(frame*CH, frame*CH + CH), css('--ink'), css('--warn'));
+    paint(cv, evalAt(frame, K), css('--ink'), css('--brass'));
     kOut.textContent = K;
     tOut.textContent = (frame/M.fps).toFixed(2);
     const kept = K*CH;
-    ro.innerHTML = useRaw
-      ? 'frame <b>'+frame+'</b> / '+N+'<br>source <b>raw landmarks</b><br>numbers in use <b>'+
-        M.rawNumbers.toLocaleString()+'</b><br>no fit, no smoothing<br>every frame independent'
-      : 'frame <b>'+frame+'</b> / '+N+'<br>numbers in use <b>'+
-        kept.toLocaleString()+'</b><br>vs raw <b>'+M.rawNumbers.toLocaleString()+
-        '</b><br>ratio <b>'+(M.rawNumbers/kept).toFixed(1)+'×</b><br>cutoff <b>'+
-        (K*M.fps/(2*N)).toFixed(2)+' Hz</b>';
+    ro.innerHTML = 'frame <b>'+frame+'</b> / '+N+
+      '<br>raw <b>'+M.rawNumbers.toLocaleString()+'</b> numbers'+
+      '<br>fitted <b>'+kept.toLocaleString()+'</b> numbers'+
+      '<br>ratio <b>'+(M.rawNumbers/kept).toFixed(1)+'×</b>'+
+      '<br>cutoff <b>'+(K*M.fps/(2*N)).toFixed(2)+' Hz</b>';
   }
   kEl.addEventListener('input', renderHero);
   tEl.addEventListener('input', () => { frame = +tEl.value; renderHero(); });
   playBtn.addEventListener('click', () => {
     playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play';
-  });
-  const rawBtn = document.getElementById('rawtoggle');
-  rawBtn.addEventListener('click', () => {
-    useRaw = !useRaw;
-    rawBtn.textContent = 'Showing: ' + (useRaw ? 'raw' : 'fitted');
-    kEl.disabled = useRaw;               // the slider means nothing without a fit
-    kEl.style.opacity = useRaw ? 0.35 : 1;
-    renderHero();
   });
   let last = 0;
   function loop(ts){
