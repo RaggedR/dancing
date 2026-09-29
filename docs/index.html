@@ -108,6 +108,8 @@ th{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:
 td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:.88rem}
 tr.best td{background:color-mix(in srgb,var(--brass) 9%,transparent)}
 .scroll{overflow-x:auto}
+.imgframe{background:var(--raised);border:1px solid var(--line);padding:12px}
+.imgframe img{display:block;min-width:1000px;width:100%;height:auto}
 .note{border-left:3px solid var(--warn);padding:2px 0 2px 18px;color:var(--muted)}
 .note strong{color:var(--ink)}
 figcaption{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;color:var(--muted);margin-top:10px;line-height:1.6}
@@ -308,6 +310,18 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
     <div class="stat"><div class="n">1.93 px</div><div class="l">residual in the turn</div></div>
     <div class="stat"><div class="n">1.13 px</div><div class="l">residual elsewhere</div></div>
   </div>
+  <figure>
+    <div class="scroll imgframe">
+      <img src="compare.png" width="2100" height="400" loading="lazy"
+           alt="Fourteen frames spanning 19.0 to 20.3 seconds, rendered twice. The upper
+                row is a single global 6 Hz fit, in which the limbs smear into a narrow
+                vertical shape. The lower row is the spliced fit, in which the working
+                leg holds a distinct bent shape and the supporting leg stays a clean line.">
+    </div>
+    <figcaption>The same fourteen frames of the turn, 19.0s to 20.3s. Above: one global
+    6&nbsp;Hz fit. Below: the splice. The working leg keeps its shape instead of
+    smearing — the difference is articulation, not position.</figcaption>
+  </figure>
   <div class="prose">
     <p>Against 6.19&nbsp;px in the turn for a single global 6&nbsp;Hz fit, and 2.89&nbsp;px
     for a global 12&nbsp;Hz one that coarsened the rest of the variation to get there.

@@ -52,8 +52,9 @@ def main() -> None:
 </html>
 """
     (DST / "index.html").write_text(page)
-    for asset in sorted(SRC.glob("data*.js")):
-        shutil.copy2(asset, DST / asset.name)
+    for pattern in ("data*.js", "*.png", "*.svg"):
+        for asset in sorted(SRC.glob(pattern)):
+            shutil.copy2(asset, DST / asset.name)
     (DST / ".nojekyll").write_text("")
 
     size = sum(f.stat().st_size for f in DST.iterdir()) / 1024
