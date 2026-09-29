@@ -4,7 +4,8 @@ Extracting dance motion from video, fitting it to a closed-form curve, and
 asking what the curve says about the choreography.
 
 **[Live page →](https://raggedr.github.io/dancing/)** — the reconstruction runs
-in your browser, evaluating the series below 50 times a second.
+in your browser, evaluating the series below 50 times a second. Switchable
+between the raw landmarks and the fitted curve.
 
 ## What this does
 
@@ -65,9 +66,19 @@ azimuth: a double pirouette.
 
 Two fixes aimed at the wrong thing before that was understood (left/right label
 swaps, and the low-pass cutoff). Both improved the residual; neither addressed
-the cause. `piecewise_fit.py` is the practical remedy for the 2D case — fit the
-turn at a higher cutoff than the surrounding phrases and crossfade the seams,
-giving 1.93px residual in the turn against 1.15px elsewhere.
+the cause.
+
+`piecewise_fit.py` is the practical remedy for the 2D case — fit the turn at a
+higher cutoff than the surrounding phrases and crossfade the seams, giving
+1.93px residual in the turn against 1.13px elsewhere. It does not make the spin
+read as a rotation, which 2D cannot do; it recovers articulation, so limbs hold
+their shape through the turn instead of smearing.
+
+`extract_world.py` and `render_3d.py` remain as diagnostic tools — they are what
+established the shoulder-rigidity and azimuth measurements above — but the
+published page presents the 2D work only. Metric 3D carries no global
+translation, so the dancer appears to move on the spot, losing the spatial
+architecture of the variation.
 
 ## Running it
 

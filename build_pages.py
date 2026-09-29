@@ -52,8 +52,8 @@ def main() -> None:
 </html>
 """
     (DST / "index.html").write_text(page)
-    for asset in ("data.js", "data3d.js"):
-        shutil.copy2(SRC / asset, DST / asset)
+    for asset in sorted(SRC.glob("data*.js")):
+        shutil.copy2(asset, DST / asset.name)
     (DST / ".nojekyll").write_text("")
 
     size = sum(f.stat().st_size for f in DST.iterdir()) / 1024

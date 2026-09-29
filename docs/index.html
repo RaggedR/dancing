@@ -127,13 +127,16 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
         <label for="tslider">Time <b><span id="tval">0.00</span> s</b></label>
         <input type="range" id="tslider" min="0" max="1225" value="0" step="1">
       </div>
+      <button id="rawtoggle">Showing: fitted</button>
       <button id="play">Pause</button>
       <div class="readout" id="ro"></div>
     </div>
   </figure>
   <figcaption>The skeleton is reconstructed every frame by evaluating the series below.
   Drag <em>coefficients kept</em> toward 2 to watch the choreography dissolve into its
-  lowest harmonics — the dance becoming a smear of its own average.</figcaption>
+  lowest harmonics — the dance becoming a smear of its own average. Switch to
+  <em>raw</em> for the unfitted landmarks exactly as the pose model reported them,
+  frame by frame, with every tremor left in.</figcaption>
 </section>
 
 <section class="wrap stack">
@@ -264,49 +267,36 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
 
 <section class="wrap stack">
   <div class="prose">
-    <p class="eyebrow">Finding four — the turn</p>
-    <h2>A pirouette has no width</h2>
-    <p>Everything above is two-dimensional, and for most of the variation that costs
-    almost nothing. It costs everything at 18.9 seconds, where the skeleton collapses
-    into a vertical sliver for roughly a second and a quarter.</p>
-    <p>No amount of filtering repairs it, because nothing is broken. A pirouette is
-    rotation about the vertical axis — precisely the axis a camera discards. The limbs
-    move almost entirely in depth, so in projection a spin cannot read as a spin. It
-    reads as a squash.</p>
+    <p class="eyebrow">Finding four</p>
+    <h2>One cutoff cannot serve a whole variation</h2>
+    <p>The cosine basis spans the entire clip, so a single cutoff has to suit both
+    a sustained phrase and a pirouette at once. It cannot. At 6&nbsp;Hz the phrases
+    are right and the turn dissolves; at 12&nbsp;Hz the turn sharpens and everything
+    else picks up tracker jitter.</p>
+    <p>Fitting in segments resolves it — a low cutoff either side, a much higher one
+    across the turn. The hazard is the join: two independently fitted segments choose
+    their coefficients knowing only their own samples, so they disagree at the seam
+    and the splice itself becomes a visible jump. Overlapping the segments and
+    crossfading with a raised cosine spreads the handover across a fifth of a second.</p>
   </div>
-  <figure>
-    <div class="panel" style="grid-template-columns:1fr">
-      <div class="stage" style="min-height:250px"><canvas id="rigid" width="1000" height="230"></canvas></div>
-    </div>
-    <figcaption>Shoulder separation — a rigid body dimension that cannot truly change.
-    In projection it collapses to 74% through the turn; measured in three dimensions it
-    holds at 100%.</figcaption>
-  </figure>
+  <div class="stats">
+    <div class="stat"><div class="n">6 Hz</div><div class="l">phrases, either side</div></div>
+    <div class="stat"><div class="n">20 Hz</div><div class="l">across the turn</div></div>
+    <div class="stat"><div class="n">1.93 px</div><div class="l">residual in the turn</div></div>
+    <div class="stat"><div class="n">1.13 px</div><div class="l">residual elsewhere</div></div>
+  </div>
   <div class="prose">
-    <p>That is the whole diagnosis in one measurement. Re-extracting the same video as
-    metric 3D landmarks keeps the shoulders a rigid 30&nbsp;cm apart throughout, and
-    expresses the motion as azimuth instead: <strong>−735°, or 2.03 revolutions</strong>
-    — a double pirouette. The rotation was always in the footage. Two dimensions had
-    nowhere to put it.</p>
+    <p>Against 6.19&nbsp;px in the turn for a single global 6&nbsp;Hz fit, and 2.89&nbsp;px
+    for a global 12&nbsp;Hz one that coarsened the rest of the variation to get there.
+    The seams add nothing: measured against the raw data at the same frames, the
+    spliced curve moves <em>less</em>, so it is still smoothing rather than introducing
+    a discontinuity.</p>
+    <p class="note"><strong>What it does not fix.</strong> The turn still does not read
+    as a rotation, and no cutoff will make it. A pirouette is rotation about the
+    vertical axis — precisely the axis a camera discards — so in projection it can only
+    ever appear as a narrowing. What the splice recovers is articulation: limbs that
+    hold their shape through the turn instead of smearing.</p>
   </div>
-  <figure class="panel">
-    <div class="stage"><canvas id="orbit" width="600" height="600"></canvas></div>
-    <div class="controls">
-      <div class="ctl">
-        <label for="oaz">Camera azimuth <b><span id="azv">0</span>°</b></label>
-        <input type="range" id="oaz" min="0" max="359" value="0">
-      </div>
-      <div class="ctl">
-        <label for="ot">Time <b><span id="otv">0.00</span> s</b></label>
-        <input type="range" id="ot" min="0" max="1225" value="0" step="1">
-      </div>
-      <button id="ospin">Auto-orbit: on</button>
-      <button id="oturn">Jump to the turn</button>
-      <div class="readout" id="oro"></div>
-    </div>
-  </figure>
-  <figcaption>Drag the canvas to orbit. The body stays solid from every angle — a
-  fabricated depth axis would flatten into a sheet when rotated.</figcaption>
 </section>
 
 <section class="wrap stack">
@@ -330,8 +320,8 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
     <p class="note"><strong>Two fixes that missed.</strong> The turn was first blamed on
     left/right limb labels swapping (56 frames, all inside it) and then on the 6 Hz
     cutoff filtering away real motion. Both were true and neither was the cause. The
-    residual improved and the turn still looked broken, because the fault was not in
-    the filtering at all — see below.</p>
+    residual improved and the turn still looked broken, because a single global
+    cutoff was the wrong model — see below.</p>
   </div>
 </section>
 
@@ -340,11 +330,13 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
   cutoff. Coefficients, principal components and spectra computed offline; every
   figure on this page is drawn in the browser from those numbers. Source motion
   measured from a public performance clip of the Paquita variation danced by
-  Maria Khoreva — no video, imagery or audio from that recording appears here.</p>
+  Maria Khoreva — <a href="https://www.youtube.com/shorts/oE1F1IkqPRs"
+  rel="noopener noreferrer" target="_blank">watch the original on YouTube</a>.
+  No video, imagery or audio from that recording appears on this page; only
+  coordinates measured from it, and drawings made from those coordinates.</p>
 </footer>
 
 <script src="data.js"></script>
-<script src="data3d.js"></script>
 <script>
 (function(){
   const D = window.DANCE, M = D.meta, CH = M.channels, N = M.N;
@@ -400,8 +392,10 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
   let frame = 0, playing = !window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   if (!playing) playBtn.textContent = 'Play';
 
+  let useRaw = false;
   function renderHero(){
-    const K = +kEl.value, p = evalAt(frame, K);
+    const K = +kEl.value;
+    const p = useRaw ? D.raw.slice(frame*CH, frame*CH + CH) : evalAt(frame, K);
     const ctx = fit(cv), w = cv.width/dpr(), h = cv.height/dpr();
     // frame is 1080x1350 (0.8 aspect); letterbox into canvas
     const s = Math.min(w/0.8, h), bw = 0.8*s, bh = s, ox = (w-bw)/2, oy = (h-bh)/2;
@@ -411,15 +405,26 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
     kOut.textContent = K;
     tOut.textContent = (frame/M.fps).toFixed(2);
     const kept = K*CH;
-    ro.innerHTML = 'frame <b>'+frame+'</b> / '+N+'<br>numbers in use <b>'+
-      kept.toLocaleString()+'</b><br>vs raw <b>'+M.rawNumbers.toLocaleString()+
-      '</b><br>ratio <b>'+(M.rawNumbers/kept).toFixed(1)+'×</b><br>cutoff <b>'+
-      (K*M.fps/(2*N)).toFixed(2)+' Hz</b>';
+    ro.innerHTML = useRaw
+      ? 'frame <b>'+frame+'</b> / '+N+'<br>source <b>raw landmarks</b><br>numbers in use <b>'+
+        M.rawNumbers.toLocaleString()+'</b><br>no fit, no smoothing<br>every frame independent'
+      : 'frame <b>'+frame+'</b> / '+N+'<br>numbers in use <b>'+
+        kept.toLocaleString()+'</b><br>vs raw <b>'+M.rawNumbers.toLocaleString()+
+        '</b><br>ratio <b>'+(M.rawNumbers/kept).toFixed(1)+'×</b><br>cutoff <b>'+
+        (K*M.fps/(2*N)).toFixed(2)+' Hz</b>';
   }
   kEl.addEventListener('input', renderHero);
   tEl.addEventListener('input', () => { frame = +tEl.value; renderHero(); });
   playBtn.addEventListener('click', () => {
     playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Play';
+  });
+  const rawBtn = document.getElementById('rawtoggle');
+  rawBtn.addEventListener('click', () => {
+    useRaw = !useRaw;
+    rawBtn.textContent = 'Showing: ' + (useRaw ? 'raw' : 'fitted');
+    kEl.disabled = useRaw;               // the slider means nothing without a fit
+    kEl.style.opacity = useRaw ? 0.35 : 1;
+    renderHero();
   });
   let last = 0;
   function loop(ts){
@@ -557,137 +562,6 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
 })();
 </script>
 
-<script>
-(function(){
-  const D = window.DANCE3D; if (!D) return;
-  const M = D.meta, CH = M.channels, N = M.N, J = M.joints;
-  const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const dpr = () => Math.min(window.devicePixelRatio || 1, 2);
-  function fit(cv){
-    const r = dpr(), w = cv.width, h = cv.height;
-    if (cv.dataset.f !== String(r)){
-      cv.style.width = w+'px'; cv.style.height = h+'px';
-      cv.width = w*r; cv.height = h*r; cv.dataset.f = String(r);
-    }
-    const c = cv.getContext('2d'); c.setTransform(r,0,0,r,0,0); c.clearRect(0,0,w,h);
-    return c;
-  }
-  const pose = new Float64Array(CH);
-  function evalAt(t){
-    pose.fill(0);
-    const ph = Math.PI*(2*t+1)/(2*N);
-    for (let k=0;k<M.K;k++){
-      const a = Math.cos(ph*k)*D.weights[k], b = k*CH;
-      for (let c=0;c<CH;c++) pose[c] += a*D.coeffs[b+c];
-    }
-    return pose;
-  }
-
-  const cv = document.getElementById('orbit');
-  const azEl = document.getElementById('oaz'), tEl = document.getElementById('ot');
-  const azOut = document.getElementById('azv'), tOut = document.getElementById('otv');
-  const ro = document.getElementById('oro');
-  const spinBtn = document.getElementById('ospin'), turnBtn = document.getElementById('oturn');
-  let frame = 0, az = 0;
-  let spin = !window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  let playing = spin;
-  if (!spin) spinBtn.textContent = 'Auto-orbit: off';
-
-  function render(){
-    const p = evalAt(frame), ctx = fit(cv);
-    const w = cv.width/dpr(), h = cv.height/dpr();
-    let cx=0, cy=0, cz=0;
-    for (let k=0;k<J;k++){ cx+=p[k*3]; cy+=p[k*3+1]; cz+=p[k*3+2]; }
-    cx/=J; cy/=J; cz/=J;
-    const a = az*Math.PI/180, ca = Math.cos(a), sa = Math.sin(a);
-    const sc = h*0.34, pts = [], depth = [];
-    for (let k=0;k<J;k++){
-      const x=p[k*3]-cx, y=p[k*3+1]-cy, z=p[k*3+2]-cz;
-      pts.push([w/2 + (x*ca+z*sa)*sc, h/2 + y*sc]);
-      depth.push(-x*sa+z*ca);
-    }
-    const dmin = Math.min.apply(null,depth), dmax = Math.max.apply(null,depth);
-    ctx.lineCap='round';
-    for (const [i,jj] of D.connections){
-      // nearer bones drawn brighter: a cheap depth cue that makes the orbit readable
-      const d = ((depth[i]+depth[jj])/2 - dmin)/((dmax-dmin)||1);
-      ctx.strokeStyle = css('--ink');
-      ctx.globalAlpha = 0.34 + 0.66*(1-d);
-      ctx.lineWidth = 1.2 + 1.8*(1-d);
-      ctx.beginPath(); ctx.moveTo(pts[i][0],pts[i][1]); ctx.lineTo(pts[jj][0],pts[jj][1]); ctx.stroke();
-    }
-    ctx.globalAlpha = 1; ctx.fillStyle = css('--brass');
-    for (const q of pts){ ctx.beginPath(); ctx.arc(q[0],q[1],2.2,0,6.2832); ctx.fill(); }
-    azOut.textContent = Math.round(az);
-    tOut.textContent = (frame/M.fps).toFixed(2);
-    const inTurn = frame/M.fps >= D.turnWindow[0] && frame/M.fps <= D.turnWindow[1];
-    ro.innerHTML = 'frame <b>'+frame+'</b> / '+N+'<br>joints <b>'+J+
-      '</b> × 3 axes<br>coefficients <b>'+(M.K*CH).toLocaleString()+
-      '</b><br>'+(inTurn ? '<b>inside the turn</b>' : 'outside the turn');
-  }
-
-  azEl.addEventListener('input', () => { az = +azEl.value; render(); });
-  tEl.addEventListener('input', () => { frame = +tEl.value; render(); });
-  spinBtn.addEventListener('click', () => {
-    spin = !spin; spinBtn.textContent = 'Auto-orbit: ' + (spin?'on':'off');
-  });
-  turnBtn.addEventListener('click', () => {
-    frame = Math.round(D.turnWindow[0]*M.fps); tEl.value = frame; render();
-  });
-  let drag = null;
-  cv.addEventListener('pointerdown', e => { drag = e.clientX; cv.setPointerCapture(e.pointerId); });
-  cv.addEventListener('pointermove', e => {
-    if (drag === null) return;
-    az = (az + (e.clientX-drag)*0.6 + 360) % 360; drag = e.clientX;
-    azEl.value = Math.round(az); render();
-  });
-  cv.addEventListener('pointerup', e => { drag = null; });
-  cv.style.cursor = 'grab';
-
-  let last = 0;
-  (function loop(ts){
-    if (playing && ts-last > 1000/M.fps){
-      last = ts; frame = (frame+1)%N; tEl.value = frame;
-      if (spin) { az = (az + 0.28) % 360; azEl.value = Math.round(az); }
-      render();
-    }
-    requestAnimationFrame(loop);
-  })(0);
-
-  function renderRigid(){
-    const c2 = document.getElementById('rigid'); if (!c2) return;
-    const ctx = fit(c2), w = c2.width/dpr(), h = c2.height/dpr();
-    const pad = {l:48,r:16,t:16,b:34}, dur = N/M.fps;
-    const X = t => pad.l + (t/dur)*(w-pad.l-pad.r);
-    const Y = v => h-pad.b - (v/1.6)*(h-pad.t-pad.b);
-    ctx.fillStyle = css('--warn')+'2a';
-    ctx.fillRect(X(D.turnWindow[0]), pad.t, X(D.turnWindow[1])-X(D.turnWindow[0]), h-pad.t-pad.b);
-    ctx.strokeStyle = css('--hair'); ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(pad.l,Y(1)); ctx.lineTo(w-pad.r,Y(1)); ctx.stroke();
-    ctx.strokeStyle = css('--line');
-    ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,h-pad.b); ctx.lineTo(w-pad.r,h-pad.b); ctx.stroke();
-    const line = (arr, colour, lw) => {
-      ctx.beginPath();
-      arr.forEach((v,i)=>{ const t=(i*2)/M.fps; i?ctx.lineTo(X(t),Y(v)):ctx.moveTo(X(t),Y(v)); });
-      ctx.strokeStyle = colour; ctx.lineWidth = lw; ctx.stroke();
-    };
-    line(D.len2, css('--warn'), 1.2);
-    line(D.len3, css('--teal'), 1.8);
-    ctx.font = '11px ui-monospace'; ctx.textAlign = 'left';
-    ctx.fillStyle = css('--teal'); ctx.fillText('3D metric — rigid', pad.l+8, pad.t+14);
-    ctx.fillStyle = css('--warn'); ctx.fillText('2D projected — collapses', pad.l+8, pad.t+30);
-    ctx.fillStyle = css('--muted'); ctx.textAlign='right';
-    ctx.fillText('1.0', pad.l-6, Y(1)+4);
-    ctx.textAlign='center'; ctx.fillText('time (s)', (pad.l+w-pad.r)/2, h-8);
-  }
-
-  function all(){ render(); renderRigid(); }
-  all();
-  window.addEventListener('resize', all);
-  window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', all);
-  new MutationObserver(all).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-})();
-</script>
 
 </body>
 </html>
