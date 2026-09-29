@@ -56,11 +56,9 @@ figure{margin:0}
 }
 @media(max-width:820px){.panel{grid-template-columns:1fr}}
 .stage{position:relative;min-height:440px;display:flex;align-items:center;justify-content:center;padding:14px}
-.stagepair{display:grid;grid-template-columns:1fr 1fr}
-@media(max-width:640px){.stagepair{grid-template-columns:1fr}}
-.stagecol{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 10px}
-.stagecol+.stagecol{border-left:1px solid var(--line)}
-@media(max-width:640px){.stagecol+.stagecol{border-left:0;border-top:1px solid var(--line)}}
+.stagepair{display:flex;flex-direction:column}
+.stagecol{display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 10px}
+.stagecol+.stagecol{border-top:1px solid var(--line)}
 .stagelabel{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-align:center}
 .stagelabel b{display:block;color:var(--ink);font-weight:600;letter-spacing:.14em}
 .stagecol.raw .stagelabel b{color:var(--warn)}
@@ -122,11 +120,11 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
     <div class="stagepair">
       <div class="stagecol raw">
         <div class="stagelabel"><b>Raw</b>as the model saw it</div>
-        <canvas id="danceRaw" width="310" height="390"></canvas>
+        <canvas id="danceRaw" width="420" height="520"></canvas>
       </div>
       <div class="stagecol fit">
         <div class="stagelabel"><b>Fitted</b>cosine series</div>
-        <canvas id="dance" width="310" height="390"></canvas>
+        <canvas id="dance" width="420" height="520"></canvas>
       </div>
     </div>
     <div class="controls">
@@ -144,7 +142,7 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
   </figure>
   <figcaption>The skeleton is reconstructed every frame by evaluating the series below.
   Drag <em>coefficients kept</em> toward 2 to watch the choreography dissolve into its
-  lowest harmonics — the dance becoming a smear of its own average. The left figure
+  lowest harmonics — the dance becoming a smear of its own average. The upper figure
   is the unfitted output: every frame estimated independently, no smoothing, every
   tremor left in. Watch a held position and the raw limbs shiver while the fitted
   ones hold still.</figcaption>
@@ -412,8 +410,7 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
   const kEl = document.getElementById('kslider'), tEl = document.getElementById('tslider');
   const kOut = document.getElementById('kval'), tOut = document.getElementById('tval');
   const ro = document.getElementById('ro'), playBtn = document.getElementById('play');
-  let frame = 0, playing = !window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  if (!playing) playBtn.textContent = 'Play';
+  let frame = 0, playing = true;   // the dance IS the content; never start frozen
 
   const cvRaw = document.getElementById('danceRaw');
   function paint(canvas, pts, bone, joint){
@@ -421,7 +418,7 @@ footer{padding:44px 0 72px;color:var(--muted);font-size:.87rem}
     // source frame is 1080x1350 (0.8 aspect); letterbox into the canvas
     const s = Math.min(w/0.8, h), bw = 0.8*s, bh = s;
     ctx.save(); ctx.translate((w-bw)/2, (h-bh)/2);
-    drawSkeleton(ctx, pts, bw, bh, bone, joint, 1.8);
+    drawSkeleton(ctx, pts, bw, bh, bone, joint, 2.1);
     ctx.restore();
   }
   function renderHero(){
